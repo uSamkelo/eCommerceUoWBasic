@@ -1,82 +1,118 @@
-﻿using eCommerceUoWBasic.Interfaces;
+using eCommerceUoWBasic.Data;
 using eCommerceUoWBasic.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-namespace eCommerceUoWBasic.Controllers
+namespace eCommerceUoWBasic.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public sealed class ProductController(DataContext context) : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ProductController : ControllerBase
+    [HttpPost]
+    public async Task<IActionResult> CreateProduct(
+        Product product,
+        CancellationToken cancellationToken)
     {
-        private readonly ILogger<ProductController> _logger;
-        private readonly IUnitofWork _unitofWork;
+        context.Products.Add(product);
+        await context.SaveChangesAsync(cancellationToken);
 
-        public ProductController(ILogger<ProductController> logger, IUnitofWork unitofWork)
+        return CreatedAtAction(nameof(GetItem), new { id = product.Id }, product);
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetItem(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var product = await context.Products
+            .AsNoTracking()
+            .SingleOrDefaultAsync(product => product.Id == id, cancellationToken);
+
+        return product is null ? NotFound() : Ok(product);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetItems(CancellationToken cancellationToken)
+    {
+        var products = await context.Products
+            .AsNoTracking()
+            .OrderBy(product => product.Id)
+            .ToListAsync(cancellationToken);
+
+        return Ok(products);
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateItem(
+        int id,
+        Product product,
+        CancellationToken cancellationToken)
+    {
+        if (id != product.Id)
         {
-            _logger = logger;
-            _unitofWork = unitofWork;
+            return BadRequest();
         }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateProduct(Product product)
+        var existing = await context.Products
+            .SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
+
+        if (existing is null)
         {
-            if (ModelState.IsValid)
+            return NotFound();
+        }
+
+        existing.Name = product.Name;
+        existing.Price = product.Price;
+        existing.StockQuantity = product.StockQuantity;
+
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(new { message = "The product was modified by another request." });
+        }
+
+        return Ok(existing);
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteItem(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var affectedRows = await context.Products
+            .Where(product => product.Id == id)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        return affectedRows == 0 ? NotFound() : NoContent();
+    }
+
+    [HttpPost("seed")]
+    public async Task<IActionResult> SeedProducts(
+        [FromQuery] int count = 200,
+        CancellationToken cancellationToken = default)
+    {
+        if (count is < 1 or > 10_000)
+        {
+            return BadRequest(new { message = "Count must be between 1 and 10,000." });
+        }
+
+        var random = Random.Shared;
+        var products = Enumerable.Range(1, count)
+            .Select(index => new Product
             {
-                await _unitofWork.Products.AddAsync(product);
-                await _unitofWork.CompleteAsync();
+                Name = $"Product {index}",
+                Price = Math.Round((decimal)(random.NextDouble() * 500 + 1), 2),
+                StockQuantity = random.Next(1, 11)
+            })
+            .ToList();
 
-                return CreatedAtAction("GetItem", new {id = product.Id}, product);
-            }
+        context.Products.AddRange(products);
+        await context.SaveChangesAsync(cancellationToken);
 
-            return Problem();
-        }
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetItem(int id)
-        {
-            var product = await _unitofWork.Products.GetById(id);
-            if (product == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(product);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetItems()
-        {
-            var products = await _unitofWork.Products.GetAllAsync();
-            if (products == null) return NotFound();
-
-            return Ok(products);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateItem(int id, Product product)
-        {
-            if (id != product.Id) return BadRequest();
-
-            await _unitofWork.Products.UpdateAsync(product);
-            await _unitofWork.CompleteAsync();
-
-            return Ok();
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteItem(int id)
-        {
-            var product = await _unitofWork.Products.GetById(id);
-            if(product == null)
-            {
-                return NotFound();
-            }
-
-            await _unitofWork.Products.DeleteAsync(id);
-            await _unitofWork.CompleteAsync();
-
-            return Ok();
-        }
+        return Ok(new { count = products.Count });
     }
 }

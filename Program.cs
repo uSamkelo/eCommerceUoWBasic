@@ -1,4 +1,4 @@
-using eCommerceUoWBasic;
+using eCommerceUoWBasic.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
