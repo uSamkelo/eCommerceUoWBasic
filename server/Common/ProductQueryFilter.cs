@@ -6,5 +6,6 @@ namespace server.Common
         public int PageSize { get; set; } = 20;
         public string? SortBy { get; set; }
         public string? Search { get; set; }
+        public string? Category { get; set; }
     }
 }

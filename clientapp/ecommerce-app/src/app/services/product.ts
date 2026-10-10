@@ -23,7 +23,7 @@ export class ProductService
  
   }
 
-  getProducts(pageNumber = 1, pageSize = 20, sortBy = 'Name', search = ''): Observable<PagedResponse<IProduct>> {
+  getProducts(pageNumber = 1, pageSize = 20, sortBy = 'Name', search = '', category = ''): Observable<PagedResponse<IProduct>> {
     let params = new HttpParams()
       .set('pageNumber', pageNumber)
       .set('pageSize', pageSize)
@@ -31,8 +31,15 @@ export class ProductService
 
     if (search.trim()) {
       params = params.set('search', search.trim());
-    }  
+    }
+    if (category.trim()) {
+      params = params.set('category', category.trim());
+    }
     return this.http.get<PagedResponse<IProduct>>(this.baseUrl, { params });
+  }
+
+  getProductCategories(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/categories`);
   }
 
   getProduct(id: number): Observable<IProduct> {
