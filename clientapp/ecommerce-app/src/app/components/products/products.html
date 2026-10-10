@@ -6,9 +6,16 @@
   [totalItems]="productsPage()?.totalRecords ?? 0"
   [searchText]="search()"
   [suggestions]="productsPage()?.data ?? []"
+  [categories]="categories()"
+  [selectedCategory]="category()"
   (searchChange)="onSearchChange($event)"
   (sortChange)="onSortChange($event)"
+  (categoryChange)="onCategoryChange($event)"
 ></app-product-catalog-toolbar-component>
+
+@if (categoryErrorMessage(); as message) {
+<p role="alert">{{ message }}</p>
+}
 
 @if (errorMessage(); as message) {
 <p role="alert">{{ message }}</p>
@@ -21,6 +28,7 @@
 <ul class="product-grid">
   @for (product of page.data; track product.id) {
   <li class="product-card">
+    <span class="product-category">{{ product.category || "Uncategorized" }}</span>
     <h2 class="product-name">{{ product.name }}</h2>
     <a [routerLink]="['/product-details']" [queryParams]="{ productId: product.id }">
       View details

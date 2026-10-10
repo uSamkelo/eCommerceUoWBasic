@@ -11,8 +11,11 @@ export class ProductCatalogToolbarComponent {
   readonly totalItems = input(0);
   readonly searchText = input("");
   readonly suggestions = input<IProduct[]>([]);
+  readonly categories = input<string[]>([]);
+  readonly selectedCategory = input("");
   readonly searchChange = output<string>();
   readonly sortChange = output<string>();
+  readonly categoryChange = output<string>();
 
   onSearchSubmit(event: SubmitEvent) {
     event.preventDefault();
@@ -37,6 +40,14 @@ export class ProductCatalogToolbarComponent {
 
     if (select instanceof HTMLSelectElement) {
       this.sortChange.emit(select.value);
+    }
+  }
+
+  onCategoryChange(event: Event) {
+    const select = event.target;
+
+    if (select instanceof HTMLSelectElement) {
+      this.categoryChange.emit(select.value);
     }
   }
 }

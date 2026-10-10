@@ -1,15 +1,21 @@
 using eCommerceUoWBasic.Data;
 using eCommerceUoWBasic.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using server.Common;
 using server.Interfaces;
+using server.Services;
 
 namespace eCommerceUoWBasic.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public sealed class ProductController(DataContext context, IProuductService productService) : ControllerBase
+public sealed class ProductController(
+    DataContext context,
+    IProuductService productService,
+    IMemoryCache cache,
+    ProductCacheVersion cacheVersion) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateProduct(
@@ -18,6 +24,7 @@ public sealed class ProductController(DataContext context, IProuductService prod
     {
         context.Products.Add(product);
         await context.SaveChangesAsync(cancellationToken);
+        cacheVersion.Invalidate();
 
         return CreatedAtAction(nameof(GetItem), new { id = product.Id }, product);
     }
@@ -27,9 +34,22 @@ public sealed class ProductController(DataContext context, IProuductService prod
         int id,
         CancellationToken cancellationToken)
     {
-        var product = await context.Products
-            .AsNoTracking()
-            .SingleOrDefaultAsync(product => product.Id == id, cancellationToken);
+        var cacheKey = (cacheVersion.Current, "detail", id);
+        if (!cache.TryGetValue(cacheKey, out Product? product))
+        {
+            product = await context.Products
+                .AsNoTracking()
+                .SingleOrDefaultAsync(product => product.Id == id, cancellationToken);
+
+            if (product is not null)
+            {
+                cache.Set(cacheKey, product, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
+                    Size = 1
+                });
+            }
+        }
 
         return product is null ? NotFound() : Ok(product);
     }
@@ -39,6 +59,13 @@ public sealed class ProductController(DataContext context, IProuductService prod
     {
         var pagedResponse = await productService.GetAllProductsAsync(filter, cancellationToken);
         return Ok(pagedResponse);
+    }
+
+    [HttpGet("categories")]
+    public async Task<IActionResult> GetCategories(CancellationToken cancellationToken)
+    {
+        var categories = await productService.GetProductCategoriesAsync(cancellationToken);
+        return Ok(categories);
     }
 
     [HttpPut("{id:int}")]
@@ -62,6 +89,7 @@ public sealed class ProductController(DataContext context, IProuductService prod
 
         existing.Name = product.Name;
         existing.Price = product.Price;
+        existing.Category = product.Category;
         existing.StockQuantity = product.StockQuantity;
 
         try
@@ -73,6 +101,7 @@ public sealed class ProductController(DataContext context, IProuductService prod
             return Conflict(new { message = "The product was modified by another request." });
         }
 
+        cacheVersion.Invalidate();
         return Ok(existing);
     }
 
@@ -84,6 +113,11 @@ public sealed class ProductController(DataContext context, IProuductService prod
         var affectedRows = await context.Products
             .Where(product => product.Id == id)
             .ExecuteDeleteAsync(cancellationToken);
+
+        if (affectedRows > 0)
+        {
+            cacheVersion.Invalidate();
+        }
 
         return affectedRows == 0 ? NotFound() : NoContent();
     }
@@ -110,6 +144,7 @@ public sealed class ProductController(DataContext context, IProuductService prod
 
         context.Products.AddRange(products);
         await context.SaveChangesAsync(cancellationToken);
+        cacheVersion.Invalidate();
 
         return Ok(new { count = products.Count });
     }

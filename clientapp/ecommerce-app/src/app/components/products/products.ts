@@ -27,14 +27,16 @@ export class Products {
   readonly pageNumber = signal(1);
   readonly loading = signal(true);
   readonly errorMessage = signal<string | null>(null);
+  readonly categoryErrorMessage = signal<string | null>(null);
   readonly search = signal("");
   readonly sortBy = signal("Name");
+  readonly category = signal("");
+  readonly categories = signal<string[]>([]);
 
   constructor(
     private productService: ProductService,
     private cartService: CartService,
   ) {
-    this.loadProducts();
     this.productRequests.pipe(
       switchMap((request) =>
         timer(250).pipe(
@@ -44,6 +46,7 @@ export class Products {
               20,
               request.sortBy,
               request.search,
+              request.category,
             )
           ),
           tap((response) => {
@@ -58,6 +61,16 @@ export class Products {
           }),
         )
       ),
+      takeUntilDestroyed(),
+    ).subscribe();
+
+    this.productService.getProductCategories().pipe(
+      tap((categories) => this.categories.set(categories)),
+      catchError((error: unknown) => {
+        console.error("Failed to load product categories.", error);
+        this.categoryErrorMessage.set("Could not load product categories.");
+        return EMPTY;
+      }),
       takeUntilDestroyed(),
     ).subscribe();
 
@@ -77,6 +90,7 @@ export class Products {
       pageNumber,
       sortBy: this.sortBy(),
       search: this.search(),
+      category: this.category(),
     });
   }
 
@@ -90,9 +104,15 @@ export class Products {
     this.loadProducts(1);
   }
 
+  onCategoryChange(category: string) {
+    this.category.set(category);
+    this.loadProducts(1);
+  }
+
   private readonly productRequests = new Subject<{
     pageNumber: number;
     sortBy: string;
     search: string;
+    category: string;
   }>();
 }

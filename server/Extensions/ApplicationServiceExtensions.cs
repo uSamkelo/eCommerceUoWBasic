@@ -13,6 +13,8 @@ namespace eCommerceUoWBasic.Extensions
             services.AddDbContext<DataContext>(options =>
                 options.UseNpgsql(config.GetConnectionString("DefaultConnection")));
 
+            services.AddMemoryCache(options => options.SizeLimit = 1_000);
+            services.AddSingleton<ProductCacheVersion>();
             services.AddScoped<PurchaseService>();
             services.AddScoped<IProuductService, ProuductService>();
 

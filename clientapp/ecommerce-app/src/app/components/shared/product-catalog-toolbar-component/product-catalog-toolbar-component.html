@@ -25,5 +25,17 @@
                 <option value="Category asc">Category</option>
             </select>
         </div>
+
+        <div class="sort-control">
+            <label for="product-category">Category</label>
+            <select id="product-category" [value]="selectedCategory()" (change)="onCategoryChange($event)">
+                <option value="">All categories</option>
+                @for (category of categories(); track category) {
+                <option [value]="category">
+                    {{ category === '__uncategorized__' ? 'Uncategorized' : category }}
+                </option>
+                }
+            </select>
+        </div>
     </div>
 </section>
