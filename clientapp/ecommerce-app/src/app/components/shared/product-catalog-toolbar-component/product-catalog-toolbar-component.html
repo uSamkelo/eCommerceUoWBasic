@@ -1,0 +1,29 @@
+<section class="catalog-toolbar" aria-label="Product catalogue controls">
+    <span class="result-count">
+        {{ totalItems() }} {{ totalItems() === 1 ? 'item' : 'items' }}
+    </span>
+
+    <div class="toolbar-controls">
+        <form class="search-form" role="search" (submit)="onSearchSubmit($event)">
+            <label class="visually-hidden" for="product-search">Search products</label>
+            <input id="product-search" name="search" type="search" placeholder="Search products" [value]="searchText()"
+                list="product-suggestions" autocomplete="off" (input)="onSearchInput($event)">
+            <datalist id="product-suggestions">
+                @for (product of suggestions(); track product.id) {
+                <option [value]="product.name"></option>
+                }
+            </datalist>
+            <button type="submit">Search</button>
+        </form>
+
+        <div class="sort-control">
+            <label for="product-sort">Sort by</label>
+            <select id="product-sort" (change)="onSortChange($event)">
+                <option value="Name asc">Name</option>
+                <option value="Price asc">Price: lowest first</option>
+                <option value="Price desc">Price: highest first</option>
+                <option value="Category asc">Category</option>
+            </select>
+        </div>
+    </div>
+</section>

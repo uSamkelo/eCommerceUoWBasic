@@ -1,0 +1,21 @@
+<nav class="navbar" aria-label="Main navigation">
+  <a class="brand" routerLink="/products" aria-label="Store home">Store</a>
+
+  <div class="nav-links">
+    @for (route of routes; track route.path) {
+    <a [routerLink]="route.path" routerLinkActive="active">{{ route.label }}</a>
+    }
+  </div>
+
+  <a class="cart-link" routerLink="/cart" [attr.aria-label]="'Shopping cart, ' + cartCount + ' items'">
+    <fa-icon [icon]="faCartShopping"></fa-icon>
+    @if (cartCount > 0) {
+    <span class="cart-count">{{ cartCount }}</span>
+    }
+  </a>
+
+  <div class="account-links" aria-label="Account">
+    <span class="login-label">Log in</span>
+    <span class="signup-label">Sign up</span>
+  </div>
+</nav>

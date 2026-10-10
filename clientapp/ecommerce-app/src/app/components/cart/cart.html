@@ -1,0 +1,49 @@
+<main class="cart">
+  <h1>Order summary</h1>
+
+  @if (cartItems.length > 0) {
+    <ul class="cart-items">
+      @for (item of cartItems; track item.product.id) {
+        <li class="cart-item">
+          <div>
+            <h2>{{ item.product.name }}</h2>
+            <p>{{ item.product.price | currency }} each</p>
+          </div>
+          <div class="cart-item-controls">
+            <button
+              type="button"
+              [attr.aria-label]="'Remove one ' + item.product.name"
+              (click)="decreaseQuantity(item.product.id)"
+            >
+              <fa-icon [icon]="faMinus"></fa-icon>
+            </button>
+            <button
+              type="button"
+              [attr.aria-label]="'Add one ' + item.product.name"
+              (click)="increaseQuantity(item.product.id)"
+            >
+              <fa-icon [icon]="faPlus"></fa-icon>
+            </button>
+            <span>| {{ item.quantity }}</span>
+            <button
+              type="button"
+              [attr.aria-label]="'Remove ' + item.product.name + ' from cart'"
+              (click)="removeItem(item.product.id)"
+            >
+              <fa-icon [icon]="faTrash"></fa-icon>
+            </button>
+          </div>
+          <strong>{{ item.product.price * item.quantity | currency }}</strong>
+        </li>
+      }
+    </ul>
+
+    <section class="cart-summary" aria-label="Cart summary">
+      <p>{{ totalQuantity }} item(s)</p>
+      <p>Total: <strong>{{ totalPrice | currency }}</strong></p>
+      <button type="button" class="btn btn-danger" (click)="clearCart()">Clear cart</button>
+    </section>
+  } @else {
+    <p>Your cart is empty.<a routerLink="/products">Continue shopping</a></p>
+  }
+</main>

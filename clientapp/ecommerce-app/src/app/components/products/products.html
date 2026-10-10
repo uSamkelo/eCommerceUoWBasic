@@ -1,0 +1,55 @@
+@if (loading()) {
+<p>Loading products...</p>
+}
+
+<app-product-catalog-toolbar-component
+  [totalItems]="productsPage()?.totalRecords ?? 0"
+  [searchText]="search()"
+  [suggestions]="productsPage()?.data ?? []"
+  (searchChange)="onSearchChange($event)"
+  (sortChange)="onSortChange($event)"
+></app-product-catalog-toolbar-component>
+
+@if (errorMessage(); as message) {
+<p role="alert">{{ message }}</p>
+<button type="button" (click)="loadProducts()">Try again</button>
+}
+
+@if (!loading() && !errorMessage()) {
+@if (productsPage(); as page) {
+@if (page.data.length > 0) {
+<ul class="product-grid">
+  @for (product of page.data; track product.id) {
+  <li class="product-card">
+    <h2 class="product-name">{{ product.name }}</h2>
+    <a [routerLink]="['/product-details']" [queryParams]="{ productId: product.id }">
+      View details
+    </a>
+    <div class="product-details">
+      <span class="product-price">{{ product.price | currency }}</span>
+      <span class="product-stock">{{ product.stockQuantity }} in stock</span>
+    </div>
+    <button type="button" class="btn btn-primary" (click)="addToCart(product)">
+      <fa-icon [icon]="faCirclePlus"></fa-icon> Add to cart
+    </button>
+  </li>
+  }
+</ul>
+} @else {
+<p>No products found.</p>
+}
+
+@if (page.totalPages > 0) {
+<nav class="pagination" aria-label="Product pages">
+  <button type="button" [disabled]="!page.hasPreviousPage" (click)="loadProducts(page.pageNumber - 1)">
+    < </button>
+
+      <span>Page {{ page.pageNumber }} of {{ page.totalPages }}</span>
+
+      <button type="button" [disabled]="!page.hasNextPage" (click)="loadProducts(page.pageNumber + 1)">
+        >
+      </button>
+</nav>
+}
+}
+}

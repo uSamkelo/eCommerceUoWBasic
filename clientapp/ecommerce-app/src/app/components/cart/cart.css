@@ -1,0 +1,105 @@
+.cart {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.cart-items {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.cart-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.cart-item h2,
+.cart-item p {
+  margin: 0;
+}
+
+.cart-item p {
+  margin-top: 6px;
+  color: #64748b;
+}
+
+.cart-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cart-summary {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.cart-summary p {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .cart {
+    padding: 20px 16px;
+  }
+
+  .cart-item {
+    grid-template-columns: 1fr auto;
+  }
+
+  .cart-item-controls {
+    grid-column: 1 / -1;
+  }
+}
+
+.btn {
+  display: inline-block;
+  font-weight: 400;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  user-select: none;
+  border: 1px solid transparent;
+  font-size: 1rem;
+  line-height: 1.5;
+  border-radius: 0.25rem;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+/* Danger variant (Red) */
+.btn-danger {
+  color: #fff;
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+/* Hover state */
+.btn-danger:hover {
+  color: #fff;
+  background-color: #bb2d3b;
+  border-color: #b02a37;
+}
+
+.cart-item-controls button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #050505;
+  font-size: 1.125rem;
+  transition: color 0.15s ease-in-out;
+}
+
+
