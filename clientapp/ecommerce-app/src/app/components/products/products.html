@@ -37,9 +37,27 @@
       <span class="product-price">{{ product.price | currency }}</span>
       <span class="product-stock">{{ product.stockQuantity }} in stock</span>
     </div>
-    <button type="button" class="btn btn-primary" (click)="addToCart(product)">
-      <fa-icon [icon]="faCirclePlus"></fa-icon> Add to cart
-    </button>
+    <div class="quantity-control" [attr.aria-label]="'Quantity of ' + product.name">
+      <button
+        type="button"
+        class="quantity-button"
+        [disabled]="getQuantity(product.id) < 1"
+        [attr.aria-label]="'Decrease quantity of ' + product.name"
+        (click)="decreaseQuantity(product.id)"
+      >
+        &minus;
+      </button>
+      <span class="quantity-value" aria-live="polite">{{ getQuantity(product.id) }}</span>
+      <button
+        type="button"
+        class="quantity-button"
+        [disabled]="getQuantity(product.id) >= product.stockQuantity"
+        [attr.aria-label]="'Increase quantity of ' + product.name"
+        (click)="increaseQuantity(product)"
+      >
+        +
+      </button>
+    </div>
   </li>
   }
 </ul>
