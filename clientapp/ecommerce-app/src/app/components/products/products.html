@@ -1,17 +1,13 @@
 @if (loading()) {
 <p>Loading products...</p>
 }
-
-<app-product-catalog-toolbar-component
-  [totalItems]="productsPage()?.totalRecords ?? 0"
-  [searchText]="search()"
-  [suggestions]="productsPage()?.data ?? []"
-  [categories]="categories()"
-  [selectedCategory]="category()"
-  (searchChange)="onSearchChange($event)"
-  (sortChange)="onSortChange($event)"
-  (categoryChange)="onCategoryChange($event)"
-></app-product-catalog-toolbar-component>
+@if (readonlyCheckoutMessage; as message) {
+  <p role="status">{{ message }}</p>
+}
+<app-product-catalog-toolbar-component [totalItems]="productsPage()?.totalRecords ?? 0" [searchText]="search()"
+  [suggestions]="productsPage()?.data ?? []" [categories]="categories()" [selectedCategory]="category()"
+  (searchChange)="onSearchChange($event)" (sortChange)="onSortChange($event)"
+  (categoryChange)="onCategoryChange($event)"></app-product-catalog-toolbar-component>
 
 @if (categoryErrorMessage(); as message) {
 <p role="alert">{{ message }}</p>
@@ -38,23 +34,13 @@
       <span class="product-stock">{{ product.stockQuantity }} in stock</span>
     </div>
     <div class="quantity-control" [attr.aria-label]="'Quantity of ' + product.name">
-      <button
-        type="button"
-        class="quantity-button"
-        [disabled]="getQuantity(product.id) < 1"
-        [attr.aria-label]="'Decrease quantity of ' + product.name"
-        (click)="decreaseQuantity(product.id)"
-      >
+      <button type="button" class="quantity-button" [disabled]="getQuantity(product.id) < 1"
+        [attr.aria-label]="'Decrease quantity of ' + product.name" (click)="decreaseQuantity(product.id)">
         &minus;
       </button>
       <span class="quantity-value" aria-live="polite">{{ getQuantity(product.id) }}</span>
-      <button
-        type="button"
-        class="quantity-button"
-        [disabled]="getQuantity(product.id) >= product.stockQuantity"
-        [attr.aria-label]="'Increase quantity of ' + product.name"
-        (click)="increaseQuantity(product)"
-      >
+      <button type="button" class="quantity-button" [disabled]="getQuantity(product.id) >= product.stockQuantity"
+        [attr.aria-label]="'Increase quantity of ' + product.name" (click)="increaseQuantity(product)">
         +
       </button>
     </div>

@@ -1,1 +1,25 @@
-<p>login works!</p>
+<form #loginForm="ngForm" (ngSubmit)="login()">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" [(ngModel)]="email" #emailField="ngModel" required email
+        autocomplete="email" />
+
+    @if (emailField.invalid && emailField.touched) {
+    <p>Please enter a valid email address.</p>
+    }
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" [(ngModel)]="password" #passwordField="ngModel" required
+        autocomplete="current-password" />
+
+    @if (passwordField.invalid && passwordField.touched) {
+    <p>Password is required.</p>
+    }
+
+    @if (error) {
+    <p role="alert">{{ error }}</p>
+    }
+
+    <button type="submit" [disabled]="loginForm.invalid || loading">
+        {{ loading ? 'Signing in…' : 'Log in' }}
+    </button>
+</form>

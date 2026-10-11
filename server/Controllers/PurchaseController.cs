@@ -1,9 +1,11 @@
 using eCommerceUoWBasic.Models;
 using eCommerceUoWBasic.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace eCommerceUoWBasic.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/purchases")]
 public sealed class PurchaseController(PurchaseService purchaseService) : ControllerBase

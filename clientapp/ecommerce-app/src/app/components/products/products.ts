@@ -3,7 +3,7 @@ import { CurrencyPipe } from "@angular/common";
 import { IProduct } from "../../Interfaces/IProduct";
 import { PagedResponse, ProductService } from "../../services/product";
 import { CartService } from "../../services/cart";
-import { RouterLink } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { ProductCatalogToolbarComponent } from "../shared/product-catalog-toolbar-component/product-catalog-toolbar-component";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { catchError, EMPTY, Subject, switchMap, tap, timer } from "rxjs";
@@ -28,11 +28,18 @@ export class Products {
   readonly sortBy = signal("Name");
   readonly category = signal("");
   readonly categories = signal<string[]>([]);
+  readonly readonlyCheckoutMessage: string | null;
 
   constructor(
     private productService: ProductService,
     private cartService: CartService,
+    private router: Router,
   ) {
+    const checkoutMessage =
+      this.router.getCurrentNavigation()?.extras.state?.["checkoutMessage"];
+    this.readonlyCheckoutMessage =
+      typeof checkoutMessage === "string" ? checkoutMessage : null;
+
     this.productRequests.pipe(
       switchMap((request) =>
         timer(250).pipe(

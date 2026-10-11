@@ -6,9 +6,10 @@ using Microsoft.EntityFrameworkCore;
 using server.Common;
 using server.Interfaces;
 using server.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace eCommerceUoWBasic.Controllers;
-
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public sealed class ProductController(
