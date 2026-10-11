@@ -61,6 +61,35 @@
   font-weight: 500;
 }
 
+.account-user {
+  max-width: 220px;
+  overflow: hidden;
+  color: #424245;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+}
+
+.sign-out-button {
+  padding: 8px 14px;
+  border: 1px solid #1d1d1f;
+  border-radius: 999px;
+  background: #1d1d1f;
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.sign-out-button:hover {
+  background: #343438;
+}
+
+.sign-out-button:focus-visible {
+  outline: 2px solid #1d1d1f;
+  outline-offset: 3px;
+}
+
 @media (max-width: 600px) {
   .navbar {
     min-height: 58px;
@@ -75,7 +104,9 @@
 
   .nav-links a,
   .login-label,
-  .signup-label {
+  .signup-label,
+  .account-user,
+  .sign-out-button {
     font-size: 0.75rem;
   }
 

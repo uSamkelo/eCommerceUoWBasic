@@ -32,10 +32,6 @@
   <section class="cart-summary" aria-label="Cart summary">
     <p>{{ totalQuantity }} item(s)</p>
     <p>Total: <strong>{{ totalPrice | currency }}</strong></p>
-    @if (checkoutError) {
-    <p role="alert">{{ checkoutError }}</p>
-    }
-
     @if (checkoutMessage) {
     <p role="status">{{ checkoutMessage }}</p>
     }

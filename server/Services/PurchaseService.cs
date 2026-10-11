@@ -4,10 +4,11 @@ using System.Text.Json;
 using eCommerceUoWBasic.Data;
 using eCommerceUoWBasic.Models;
 using Microsoft.EntityFrameworkCore;
+using server.Services;
 
 namespace eCommerceUoWBasic.Services;
 
-public sealed class PurchaseService(DataContext context)
+public sealed class PurchaseService(DataContext context, ProductCacheVersion productCacheVersion)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -20,7 +21,7 @@ public sealed class PurchaseService(DataContext context)
         var requestHash = CreateRequestHash(items);
         var strategy = context.Database.CreateExecutionStrategy();
 
-        return await strategy.ExecuteAsync(async () =>
+        var outcome = await strategy.ExecuteAsync(async () =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(
                 System.Data.IsolationLevel.Serializable,
@@ -69,6 +70,13 @@ public sealed class PurchaseService(DataContext context)
 
             return new PurchaseOutcome(statusCode, response);
         });
+
+        if (outcome.StatusCode is 200 or 409)
+        {
+            productCacheVersion.Invalidate();
+        }
+
+        return outcome;
     }
 
     private async Task<int?> DecrementStockAsync(

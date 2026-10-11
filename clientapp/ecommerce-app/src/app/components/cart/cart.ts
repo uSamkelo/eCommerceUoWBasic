@@ -1,11 +1,13 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { CartItem, CartService } from '../../services/cart';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faMinus, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { IPurchaseRequest } from '../../Interfaces/IPurchase';
 import { PurchaseService } from '../../services/purchase-service';
+import { ToastService } from '../../services/toast.service';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-cart',
@@ -20,13 +22,17 @@ export class Cart {
   readonly faPlus = faPlus;
   
   isCheckingOut = false;
-  checkoutError: string | null = null;
   checkoutMessage: string | null = null;
   private pendingCheckout:
   | { signature: string; key: string }
   | null = null;
 
-  constructor(private cartService: CartService, private purchaseService: PurchaseService) {
+  constructor(
+    private cartService: CartService,
+    private purchaseService: PurchaseService,
+    private toastService: ToastService,
+    private router: Router,
+  ) {
     this.cartItems = cartService.getItems();
   }
 
@@ -53,7 +59,7 @@ export class Cart {
     this.cartItems = this.cartService.getItems();
   }
 
-  checkout() {
+ checkout() {
   if (this.isCheckingOut || this.cartItems.length === 0) {
     return;
   }
@@ -75,23 +81,45 @@ export class Cart {
   }
 
   this.isCheckingOut = true;
-  this.checkoutError = null;
   this.checkoutMessage = null;
 
   this.purchaseService
     .purchaseProduct(items, this.pendingCheckout.key)
+    .pipe(finalize(() => {
+      this.isCheckingOut = false;
+    }))
     .subscribe({
       next: (response) => {
         this.checkoutMessage = response.message;
         this.pendingCheckout = null;
         this.cartItems = this.cartService.clearCart();
+        void this.router.navigate(['/products']);
       },
-      error: (error: { error?: { message?: string } }) => {
-        this.checkoutError =
-          error.error?.message ?? 'Purchase failed. Please try again.';
-      },
-      complete: () => {
-        this.isCheckingOut = false;
+      error: (error: { status?: number; error?: unknown }) => {
+        if (error.status === 409) {
+          this.pendingCheckout = null;
+        }
+
+        const body =
+          typeof error.error === 'object' && error.error !== null
+            ? (error.error as Record<string, unknown>)
+            : {};
+        const serverMessage =
+          typeof body['message'] === 'string'
+            ? body['message']
+            : 'Purchase failed. Please try again.';
+        const productId =
+          typeof body['productId'] === 'number' ? body['productId'] : null;
+        const failedProduct = error.status === 409 && productId !== null
+          ? this.cartItems.find(
+              (item) => item.product.id === productId,
+            )
+          : undefined;
+
+        const message = failedProduct
+          ? `${failedProduct.product.name}: ${serverMessage}`
+          : serverMessage;
+        this.toastService.error(message, 6000);
       },
     });
 }

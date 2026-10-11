@@ -12,7 +12,8 @@ import {
 import { DEFAULT_CURRENCY_CODE, LOCALE_ID } from "@angular/core";
 import { registerLocaleData } from '@angular/common';
 import localeEnZa from '@angular/common/locales/en-ZA';
-import { provideHttpClient, withFetch } from "@angular/common/http";
+import { HTTP_INTERCEPTORS, provideHttpClient, withFetch, withInterceptorsFromDi } from "@angular/common/http";
+import { JwtInterceptor } from "./interceptors/jwt-interceptor";
 
 registerLocaleData(localeEnZa);
 
@@ -24,5 +25,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
     provideClientHydration(withEventReplay()),
+    provideHttpClient(withFetch(), withInterceptorsFromDi()),
+   { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true }
   ],
 };

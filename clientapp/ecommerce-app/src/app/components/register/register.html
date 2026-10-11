@@ -1,1 +1,32 @@
-<p>register works!</p>
+<form #registerForm="ngForm" (ngSubmit)="register()">
+    <h1>Create account</h1>
+
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" [(ngModel)]="username" #usernameField="ngModel" required
+        autocomplete="username" />
+    @if (usernameField.invalid && usernameField.touched) {
+    <p>Username is required.</p>
+    }
+
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" [(ngModel)]="email" #emailField="ngModel" required email
+        autocomplete="email" />
+    @if (emailField.invalid && emailField.touched) {
+    <p>Please enter a valid email address.</p>
+    }
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" [(ngModel)]="password" #passwordField="ngModel" required
+        minlength="6" autocomplete="new-password" />
+    @if (passwordField.invalid && passwordField.touched) {
+    <p>Password must be at least 6 characters long.</p>
+    }
+
+    @if (error) {
+    <p role="alert">{{ error }}</p>
+    }
+
+    <button type="submit" [disabled]="registerForm.invalid || loading">
+        {{ loading ? 'Creating account…' : 'Sign up' }}
+    </button>
+</form>
