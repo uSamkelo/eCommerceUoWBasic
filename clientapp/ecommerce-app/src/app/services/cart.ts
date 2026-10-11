@@ -27,6 +27,10 @@ export class CartService {
     return this.items;
   }
 
+  getQuantity(productId: number) {
+    return this.items.find((item) => item.product.id === productId)?.quantity ?? 0;
+  }
+
   decreaseQuantity(productId: number) {
     const item = this.items.find((cartItem) => cartItem.product.id === productId);
 

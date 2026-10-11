@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { IProduct } from '../Interfaces/IProduct';
+import { environment } from '../../environments/environment.development';
 
 export interface PagedResponse<T> {
   data: T[];
@@ -18,7 +19,7 @@ export interface PagedResponse<T> {
 })
 export class ProductService
 {
-  baseUrl = 'https://localhost:7037/api/Product';
+  private readonly baseUrl = environment.apiUrl + "/product";
   constructor(private http: HttpClient) {
  
   }

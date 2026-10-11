@@ -4,8 +4,6 @@ import { IProduct } from "../../Interfaces/IProduct";
 import { PagedResponse, ProductService } from "../../services/product";
 import { CartService } from "../../services/cart";
 import { RouterLink } from "@angular/router";
-import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
-import { faCirclePlus } from "@fortawesome/free-solid-svg-icons";
 import { ProductCatalogToolbarComponent } from "../shared/product-catalog-toolbar-component/product-catalog-toolbar-component";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { catchError, EMPTY, Subject, switchMap, tap, timer } from "rxjs";
@@ -15,14 +13,12 @@ import { catchError, EMPTY, Subject, switchMap, tap, timer } from "rxjs";
   imports: [
     CurrencyPipe,
     RouterLink,
-    FontAwesomeModule,
     ProductCatalogToolbarComponent,
   ],
   templateUrl: "./products.html",
   styleUrl: "./products.css",
 })
 export class Products {
-  readonly faCirclePlus = faCirclePlus;
   readonly productsPage = signal<PagedResponse<IProduct> | null>(null);
   readonly pageNumber = signal(1);
   readonly loading = signal(true);
@@ -77,8 +73,18 @@ export class Products {
     this.loadProducts();
   }
 
-  addToCart(product: IProduct) {
-    this.cartService.addToCart(product);
+  getQuantity(productId: number) {
+    return this.cartService.getQuantity(productId);
+  }
+
+  decreaseQuantity(productId: number) {
+    this.cartService.decreaseQuantity(productId);
+  }
+
+  increaseQuantity(product: IProduct) {
+    if (this.getQuantity(product.id) < product.stockQuantity) {
+      this.cartService.addToCart(product);
+    }
   }
 
   loadProducts(pageNumber = this.pageNumber()) {

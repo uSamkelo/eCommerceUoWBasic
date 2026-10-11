@@ -45,7 +45,7 @@ public sealed class ProductController(
             {
                 cache.Set(cacheKey, product, new MemoryCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(20),
                     Size = 1
                 });
             }
