@@ -1,11 +1,7 @@
-using eCommerceUoWBasic.Data;
 using eCommerceUoWBasic.Models;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using server.Common;
 using server.Interfaces;
-using server.Services;
 using Microsoft.AspNetCore.Authorization;
 
 namespace eCommerceUoWBasic.Controllers;
@@ -13,20 +9,14 @@ namespace eCommerceUoWBasic.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 public sealed class ProductController(
-    DataContext context,
-    IProuductService productService,
-    IMemoryCache cache,
-    ProductCacheVersion cacheVersion) : ControllerBase
+    IProductService productService) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateProduct(
         Product product,
         CancellationToken cancellationToken)
     {
-        context.Products.Add(product);
-        await context.SaveChangesAsync(cancellationToken);
-        cacheVersion.Invalidate();
-
+        await productService.CreateAsync(product, cancellationToken);
         return CreatedAtAction(nameof(GetItem), new { id = product.Id }, product);
     }
 
@@ -35,23 +25,7 @@ public sealed class ProductController(
         int id,
         CancellationToken cancellationToken)
     {
-        var cacheKey = (cacheVersion.Current, "detail", id);
-        if (!cache.TryGetValue(cacheKey, out Product? product))
-        {
-            product = await context.Products
-                .AsNoTracking()
-                .SingleOrDefaultAsync(product => product.Id == id, cancellationToken);
-
-            if (product is not null)
-            {
-                cache.Set(cacheKey, product, new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(20),
-                    Size = 1
-                });
-            }
-        }
-
+        var product = await productService.GetByIdAsync(id, cancellationToken);
         return product is null ? NotFound() : Ok(product);
     }
 
@@ -80,30 +54,14 @@ public sealed class ProductController(
             return BadRequest();
         }
 
-        var existing = await context.Products
-            .SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
-
-        if (existing is null)
+        var outcome = await productService.UpdateAsync(product, cancellationToken);
+        return outcome.Result switch
         {
-            return NotFound();
-        }
-
-        existing.Name = product.Name;
-        existing.Price = product.Price;
-        existing.Category = product.Category;
-        existing.StockQuantity = product.StockQuantity;
-
-        try
-        {
-            await context.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return Conflict(new { message = "The product was modified by another request." });
-        }
-
-        cacheVersion.Invalidate();
-        return Ok(existing);
+            ProductUpdateResult.NotFound => NotFound(),
+            ProductUpdateResult.Conflict => Conflict(new { message = "The product was modified by another request." }),
+            ProductUpdateResult.Updated => Ok(outcome.Product),
+            _ => throw new InvalidOperationException($"Unknown product update result: {outcome.Result}.")
+        };
     }
 
     [HttpDelete("{id:int}")]
@@ -111,16 +69,9 @@ public sealed class ProductController(
         int id,
         CancellationToken cancellationToken)
     {
-        var affectedRows = await context.Products
-            .Where(product => product.Id == id)
-            .ExecuteDeleteAsync(cancellationToken);
-
-        if (affectedRows > 0)
-        {
-            cacheVersion.Invalidate();
-        }
-
-        return affectedRows == 0 ? NotFound() : NoContent();
+        return await productService.DeleteAsync(id, cancellationToken)
+            ? NoContent()
+            : NotFound();
     }
 
     [HttpPost("seed")]
@@ -133,20 +84,7 @@ public sealed class ProductController(
             return BadRequest(new { message = "Count must be between 1 and 10,000." });
         }
 
-        var random = Random.Shared;
-        var products = Enumerable.Range(1, count)
-            .Select(index => new Product
-            {
-                Name = $"Product {index}",
-                Price = Math.Round((decimal)(random.NextDouble() * 500 + 1), 2),
-                StockQuantity = random.Next(1, 11)
-            })
-            .ToList();
-
-        context.Products.AddRange(products);
-        await context.SaveChangesAsync(cancellationToken);
-        cacheVersion.Invalidate();
-
-        return Ok(new { count = products.Count });
+        var seededCount = await productService.SeedAsync(count, cancellationToken);
+        return Ok(new { count = seededCount });
     }
 }

@@ -1,4 +1,5 @@
 ﻿using eCommerceUoWBasic.Data;
+using eCommerceUoWBasic.Data.Repositories;
 using eCommerceUoWBasic.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,9 @@ namespace eCommerceUoWBasic.Extensions
         {
             services.AddDbContext<DataContext>(options =>
                 options.UseNpgsql(config.GetConnectionString("DefaultConnection")));
+            services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<IIdempotencyRecordRepository, IdempotencyRecordRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services
                 .AddIdentityCore<User>(options =>
@@ -28,7 +32,7 @@ namespace eCommerceUoWBasic.Extensions
             services.AddMemoryCache(options => options.SizeLimit = 1_000);
             services.AddSingleton<ProductCacheVersion>();
             services.AddScoped<PurchaseService>();
-            services.AddScoped<IProuductService, ProuductService>();
+            services.AddScoped<IProductService, ProductService>();
             services.AddScoped<IAuthenticationService, AuthenticationService>();
 
             return services;

@@ -1,14 +1,13 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using eCommerceUoWBasic.Data;
 using eCommerceUoWBasic.Models;
-using Microsoft.EntityFrameworkCore;
+using server.Interfaces;
 using server.Services;
 
 namespace eCommerceUoWBasic.Services;
 
-public sealed class PurchaseService(DataContext context, ProductCacheVersion productCacheVersion)
+public sealed class PurchaseService(IUnitOfWork unitOfWork, ProductCacheVersion productCacheVersion)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -19,21 +18,14 @@ public sealed class PurchaseService(DataContext context, ProductCacheVersion pro
     {
         var items = NormalizeRequests(requests);
         var requestHash = CreateRequestHash(items);
-        var strategy = context.Database.CreateExecutionStrategy();
-
-        var outcome = await strategy.ExecuteAsync(async () =>
+        var outcome = await unitOfWork.ExecuteInTransactionAsync(
+            System.Data.IsolationLevel.Serializable,
+            async (transaction, token) =>
         {
-            await using var transaction = await context.Database.BeginTransactionAsync(
-                System.Data.IsolationLevel.Serializable,
-                cancellationToken);
-
-            var existing = await context.IdempotencyRecords
-                .SingleOrDefaultAsync(record => record.Key == idempotencyKey, cancellationToken);
+            var existing = await unitOfWork.IdempotencyRecords.GetByKeyAsync(idempotencyKey, token);
 
             if (existing is not null)
             {
-                await transaction.CommitAsync(cancellationToken);
-
                 return existing.RequestHash == requestHash
                     ? new PurchaseOutcome(
                         existing.StatusCode,
@@ -43,12 +35,12 @@ public sealed class PurchaseService(DataContext context, ProductCacheVersion pro
                     : PurchaseOutcome.Conflict("The idempotency key was used for a different request.");
             }
 
-            await transaction.CreateSavepointAsync("BeforeStock", cancellationToken);
-            var failedProductId = await DecrementStockAsync(items, cancellationToken);
+            await transaction.CreateSavepointAsync("BeforeStock", token);
+            var failedProductId = await DecrementStockAsync(items, token);
 
             if (failedProductId is not null)
             {
-                await transaction.RollbackToSavepointAsync("BeforeStock", cancellationToken);
+                await transaction.RollbackToSavepointAsync("BeforeStock", token);
             }
 
             var response = failedProductId is null
@@ -56,7 +48,7 @@ public sealed class PurchaseService(DataContext context, ProductCacheVersion pro
                 : PurchaseResponse.InsufficientStock(failedProductId.Value);
             var statusCode = failedProductId is null ? 200 : 409;
 
-            context.IdempotencyRecords.Add(new IdempotencyRecord
+            unitOfWork.IdempotencyRecords.Add(new IdempotencyRecord
             {
                 Key = idempotencyKey,
                 RequestHash = requestHash,
@@ -65,11 +57,11 @@ public sealed class PurchaseService(DataContext context, ProductCacheVersion pro
                 CreatedAtUtc = DateTime.UtcNow
             });
 
-            await context.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            await unitOfWork.SaveChangesAsync(token);
 
             return new PurchaseOutcome(statusCode, response);
-        });
+        },
+        cancellationToken);
 
         if (outcome.StatusCode is 200 or 409)
         {
@@ -85,17 +77,11 @@ public sealed class PurchaseService(DataContext context, ProductCacheVersion pro
     {
         foreach (var item in items)
         {
-            var affectedRows = await context.Products
-                .Where(product =>
-                    product.Id == item.ProductId &&
-                    product.StockQuantity >= item.Quantity)
-                .ExecuteUpdateAsync(
-                    setters => setters.SetProperty(
-                        product => product.StockQuantity,
-                        product => product.StockQuantity - item.Quantity),
-                    cancellationToken);
-
-            if (affectedRows != 1)
+            var decremented = await unitOfWork.Products.TryDecrementStockAsync(
+                item.ProductId,
+                item.Quantity,
+                cancellationToken);
+            if (!decremented)
             {
                 return item.ProductId;
             }
